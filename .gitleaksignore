@@ -1,0 +1,9 @@
+# Gitleaks Ignore List for Historical Commits
+# Format: <commit>:<file>:<rule-id>:<line>
+
+a2675ebde01b8dc0fe0e57e01de7e25b29c37b0e:include/r2_config.php:cloudflare-r2-credentials:8
+a2675ebde01b8dc0fe0e57e01de7e25b29c37b0e:include/r2_config.php:cloudflare-r2-credentials:15
+a2675ebde01b8dc0fe0e57e01de7e25b29c37b0e:include/r2_config.php:cloudflare-r2-credentials:28
+2382e858b3104c4a608ca6c707a1dcd150a3ca39:pages/SEmployee.php:php-db-credentials:5
+2382e858b3104c4a608ca6c707a1dcd150a3ca39:pages/SubmitData.php:php-db-credentials:13
+2382e858b3104c4a608ca6c707a1dcd150a3ca39:pages/SubmitData.php:php-db-credentials:16

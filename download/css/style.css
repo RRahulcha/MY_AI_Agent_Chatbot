@@ -1,0 +1,32 @@
+/* Custom Styles */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    min-height: calc(100vh - 76px); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-section h1 {
+    margin-bottom: 1.5rem;
+}
+
+.feature-icon {
+    font-size: 2rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+footer {
+    font-size: 0.9rem;
+}

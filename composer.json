@@ -1,0 +1,17 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^7.0",
+        "aws/aws-sdk-php": "~3.297.0"
+    },
+    "config": {
+        "policy": {
+            "advisories": {
+                "ignore-id": {
+                    "PKSA-4t1p-xpk2-nsss": "*",
+                    "PKSA-dxyf-6n16-t87m": "*",
+                    "PKSA-n3s6-289w-qtqb": "*"
+                }
+            }
+        }
+    }
+}

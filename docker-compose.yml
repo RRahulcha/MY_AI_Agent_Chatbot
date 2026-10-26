@@ -1,0 +1,75 @@
+services:
+  # -------------------------------------------------------------
+  # 1. Web Service (PHP 8.2 + Apache)
+  # -------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: settribe_ams_web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:80"
+    environment:
+      - AI_SERVICE_URL=http://ai_service:5001
+      - DB_HOST=${DB_HOST:-103.160.107.18}
+      - DB_USER=${DB_USER:-nmrmlatur_settribe_ams}
+      - DB_PASS=${DB_PASS:-SETTribe@ams1821}
+      - DB_NAME=${DB_NAME:-nmrmlatur_settribe_ams}
+      - DB_PORT=${DB_PORT:-3306}
+      - DATABASE_URL=${DATABASE_URL:-}
+    env_file:
+      - path: .env
+        required: false
+      - path: env
+        required: false
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/ai_service/__pycache__
+    depends_on:
+      ai_service:
+        condition: service_healthy
+    networks:
+      - ams_network
+
+  # -------------------------------------------------------------
+  # 2. FaceVision AI Biometric Service (Python + Flask + DeepFace)
+  # -------------------------------------------------------------
+  ai_service:
+    build:
+      context: .
+      dockerfile: ai_service/Dockerfile
+    container_name: settribe_ams_ai
+    restart: unless-stopped
+    ports:
+      - "${AI_PORT:-5001}:5001"
+    environment:
+      - DB_HOST=${DB_HOST:-103.160.107.18}
+      - DB_USER=${DB_USER:-nmrmlatur_settribe_ams}
+      - DB_PASS=${DB_PASS:-SETTribe@ams1821}
+      - DB_NAME=${DB_NAME:-nmrmlatur_settribe_ams}
+      - DB_PORT=${DB_PORT:-3306}
+      - DATABASE_URL=${DATABASE_URL:-}
+    env_file:
+      - path: .env
+        required: false
+      - path: env
+        required: false
+    volumes:
+      - .:/app
+      - /app/ai_service/__pycache__
+    working_dir: /app/ai_service
+    command: python -u app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 35s
+    networks:
+      - ams_network
+
+networks:
+  ams_network:
+    name: settribe_ams_net
+    driver: bridge

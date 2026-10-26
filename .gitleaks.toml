@@ -1,0 +1,63 @@
+title = "Dev-SETTribe-AMS Gitleaks Config"
+
+# 1. PHP Database Credentials ($host, $user, $pass, $dbname, mysqli_connect)
+[[rules]]
+id = "php-db-credentials"
+description = "PHP Database configuration variables and hardcoded passwords"
+regex = '''(?i)(\$(host|user|pass|dbname|db_pass|db_user|db_host|db_name|password|pwd))\s*=\s*["']([^"'\s]{4,})["']'''
+tags = ["password", "database", "php"]
+
+# 2. Dotenv Database Credentials (DB_HOST, DB_USER, DB_PASS, DB_NAME)
+[[rules]]
+id = "dotenv-db-credentials"
+description = "Environment variables for Database in .env files"
+regex = '''(?i)(DB_PASS|DB_PASSWORD|DB_USER|DB_HOST|DB_NAME)\s*=\s*([^\s#]{4,})'''
+tags = ["password", "database", "env"]
+
+# 3. Cloudflare R2 / AWS S3 Credentials & Endpoints
+[[rules]]
+id = "cloudflare-r2-credentials"
+description = "Cloudflare R2 / AWS S3 Credentials and Account Endpoints in PHP/Config files"
+regex = '''(?i)(Aws\\Credentials\\Credentials\s*\(\s*["'][a-f0-9]{32}["']\s*,\s*["'][a-f0-9]{64}["']|[a-f0-9]{32}\.r2\.cloudflarestorage\.com|pub-[a-f0-9]{32}\.r2\.dev)'''
+tags = ["credentials", "cloudflare", "r2", "aws"]
+
+# 4. Firebase Web API Keys
+[[rules]]
+id = "firebase-api-key"
+description = "Firebase Web API Key (AIzaSy...)"
+regex = '''(?i)(apiKey\s*:\s*["']?(AIzaSy[A-Za-z0-9_-]{33})["']?)'''
+tags = ["api-key", "firebase", "google"]
+
+# 5. Firebase / Google Service Account Private Key & JSON
+[[rules]]
+id = "firebase-service-account"
+description = "Google / Firebase Service Account Private Key & JSON fields"
+regex = '''(?i)("private_key"\s*:\s*"-----BEGIN PRIVATE KEY-----|"private_key_id"\s*:\s*"[a-f0-9]{40}")'''
+tags = ["private-key", "service-account", "firebase", "google"]
+
+# 6. Generic API Secret / Token in PHP or JS
+[[rules]]
+id = "generic-api-secret"
+description = "Generic API secret, key, or access token in PHP/JS files"
+regex = '''(?i)(secret|api[_-]?key|access[_-]?token|auth[_-]?token)\s*[:=]\s*["']?([A-Za-z0-9\-_\.]{10,})["']?'''
+tags = ["secret", "api", "token"]
+
+# 7. SMTP / Mail Credentials
+[[rules]]
+id = "smtp-mail-credentials"
+description = "SMTP or Mail authentication credentials"
+regex = '''(?i)(smtp[_-]?(pass|password|user|username|auth)|mail[_-]?(pass|password))\s*=\s*["']?(\S{4,})["']?'''
+tags = ["credentials", "smtp", "mail"]
+
+# Exclusions / Allowlist for third-party libs and uploaded content
+[allowlist]
+description = "Global allowlist for Dev-SETTribe-AMS"
+paths = [
+    '''vendor/.*''',
+    '''vendors/.*''',
+    '''apks/.*''',
+    '''uploads/.*''',
+    '''profile-photos/.*''',
+    '''composer\.lock''',
+    '''include/_smtp\.zip'''
+]

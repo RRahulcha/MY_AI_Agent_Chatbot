@@ -1,0 +1,13 @@
+.git
+.gitignore
+.gitleaks*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+node_modules
+.vscode
+.idea
+vendor/bin
+downloads/*.jpg

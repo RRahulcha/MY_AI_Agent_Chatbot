@@ -1,0 +1,74 @@
+================================================================================
+          SETTribe AMS - HOW TO RUN ON ANOTHER LAPTOP (3 EASY METHODS)
+================================================================================
+
+METHOD 1: ZERO INSTALLATION (RUN ACROSS SAME WI-FI / MOBILE HOTSPOT)
+--------------------------------------------------------------------------------
+Agar dono laptop same Wi-Fi ya Mobile Hotspot se jude hain, toh dusre laptop
+par KUCH BHI install karne ki zaroorat nahi hai (na Docker, na XAMPP, na Python).
+
+Aapka project container already aapke laptop par live chal raha hai.
+Aapka local IP address hai: 192.168.1.12
+
+👉 Dusre laptop ya phone ke browser me bas yeh URL open karein:
+   http://192.168.1.12:8080/pages/login.php
+
+   Live Face Attendance URL:
+   http://192.168.1.12:8080/pages/live_face_attendance.php
+
+
+================================================================================
+METHOD 2: DOCKER COMPOSE PAR CHALANA (BINA PHP / PYTHON / XAMPP INSTALL KIYE)
+--------------------------------------------------------------------------------
+Dusre laptop par sirf Docker Desktop install hona chahiye.
+(PHP, Apache, MySQL, Python, DeepFace kuch bhi install nahi karna padega).
+
+1. Us laptop par project clone karein:
+   git clone https://github.com/SETTribe-IT-Solutions/Dev-SETTribe-AMS.git
+   cd Dev-SETTribe-AMS
+   git checkout tusharsingh
+
+2. Root directory me .env file banayein:
+   PORT=8080
+   AI_PORT=5001
+   AI_SERVICE_URL=http://ai_service:5001
+
+   # Remote Database Credentials
+   DB_HOST=103.160.107.18
+   DB_NAME=nmrmlatur_settribe_ams
+   DB_USER=nmrmlatur_settribe_ams
+   DB_PASS=SETTribe@ams1821
+   DB_PORT=3306
+
+3. Terminal / Command Prompt me run karein:
+   docker compose up -d
+
+4. Browser me open karein:
+   http://localhost:8080/pages/login.php
+
+
+================================================================================
+METHOD 3: PEN DRIVE SE ZERO INTERNET & ZERO BUILD TIME TRANSFER
+--------------------------------------------------------------------------------
+Agar us laptop par internet slow hai ya build karne ka wait nahi karna:
+
+STEP A (Aapke laptop par image export karein):
+   docker save -o ams_docker.tar dev-settribe-ams-tusharsingh-web:latest dev-settribe-ams-tusharsingh-ai_service:latest
+   (Yeh ams_docker.tar file banayega, isko Pen Drive me daal dein).
+
+STEP B (Dusre laptop par):
+   1. Pen Drive se ams_docker.tar aur project ka docker-compose.yml us laptop me copy karein.
+   2. Terminal me run karein:
+      docker load -i ams_docker.tar
+      docker compose up -d
+   3. Open karein: http://localhost:8080/pages/login.php
+
+
+================================================================================
+USEFUL COMMANDS REFERENCE:
+--------------------------------------------------------------------------------
+- Containers check karna:       docker compose ps
+- Live logs dekhna:             docker compose logs -f
+- Containers band karna:        docker compose down
+- AI Face cache rebuild karna:  docker compose exec ai_service python rebuild_db.py
+================================================================================

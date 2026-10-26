@@ -1,0 +1,3 @@
+# Extend session lifetime to 30 days globally
+php_value session.gc_maxlifetime 2592000
+php_value session.cookie_lifetime 2592000

@@ -1,0 +1,46 @@
+# ignore everything under uploads
+/uploads/*
+
+# BUT keep leave_documents folder
+!uploads/leave_documents/
+!uploads/leave_documents/.gitkeep
+
+include/db_config.php
+/ams-ai/.env
+pages/leavedocs/*
+
+.env
+env
+include/settribe-s-ams.json
+
+pages/whatsNew.php
+
+# Python AI Service
+__pycache__/
+*.pyc
+ai_service/encodings_cache.pkl
+download/*.jpg
+
+# Python virtual environments
+.venv/
+venv/
+ams-ai/.venv/
+ams-ai/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment secrets
+.env.*
+!.env.example
+
+# Local databases and generated AI data
+*.sqlite
+*.sqlite3
+*.db
+chroma/
+qdrant_storage/
+
+# Logs
+*.log
