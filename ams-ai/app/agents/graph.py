@@ -16,10 +16,10 @@ from app.guardrails.detector import (
 )
 
 # Import tools dynamically or explicitly
-from app.tools.leave import get_leave_balances, apply_leave, cancel_leave, get_pending_leaves, approve_leave, reject_leave
+from app.tools.leave import get_leave_balances, apply_leave, cancel_leave, get_pending_leaves, approve_leave, reject_leave, check_existing_application
 from app.tools.wfh import apply_wfh, get_wfh_status
 from app.tools.attendance import get_attendance_range, punch_in, punch_out, check_punch_out_status, get_today_punch_status
-from app.tools.tasks import log_task, pause_task, resume_task, finish_task, get_my_tasks
+from app.tools.tasks import log_task, pause_task, resume_task, finish_task, get_my_tasks, allocate_task
 from app.rag.retrieval import query_policy
 
 logger = logging.getLogger("ams-ai.agents.graph")
@@ -405,7 +405,11 @@ def execute_tools_node(state: AgentState) -> dict:
             details = {}
         
         # 1. State-mutating writes require validation and confirmation step
-        is_write = action in ["apply_leave", "request_leave", "apply_wfh", "cancel_leave", "punch_out", "approve_leave", "reject_leave"]
+        is_write = action in [
+            "apply_leave", "request_leave", "apply_wfh", "cancel_leave", 
+            "log_task", "allocate_task", "assign_task", "finish_task", 
+            "punch_out", "approve_leave", "reject_leave"
+        ]
         
         # Validate and normalize mandatory dates and leave_type before asking for confirmation
         if action in ["apply_leave", "request_leave", "apply_wfh"]:
@@ -470,6 +474,16 @@ def execute_tools_node(state: AgentState) -> dict:
                     }],
                     "next_node": "llm_generator_node"
                 }
+
+            # Check if user already applied on this date range before asking confirmation
+            existing_app = check_existing_application(user["user_id"], from_date, to_date)
+            if existing_app.get("has_applied"):
+                return {
+                    "confirmation_required": False,
+                    "pending_action": None,
+                    "tool_results": [{"success": False, "message": existing_app.get("message")}],
+                    "next_node": "llm_generator_node"
+                }
                 
         if is_write and not is_confirm:
             logger.info(f"Write action '{action}' requires validation. Halting for confirmation.")
@@ -522,6 +536,16 @@ def execute_tools_node(state: AgentState) -> dict:
                 res = get_today_punch_status(user["user_id"])
             elif action in ["log_task"]:
                 res = log_task(user["user_id"], details.get("project", "General"), details.get("description", "Task log"), details.get("duration", 1.0))
+            elif action in ["allocate_task", "assign_task"]:
+                res = allocate_task(
+                    allocator_id=user["user_id"],
+                    receiver_id=details.get("receiver_id") or details.get("assignee") or details.get("user_id"),
+                    task_title=details.get("task_title") or details.get("title") or details.get("task"),
+                    project_name=details.get("project_name") or details.get("project"),
+                    deadline=details.get("deadline"),
+                    remark=details.get("remark", "Assigned via AI Assistant"),
+                    status=details.get("status", "In Progress")
+                )
             elif action in ["pause_task"]:
                 res = pause_task(user["user_id"], details.get("task_id"))
             elif action in ["resume_task"]:
@@ -582,22 +606,67 @@ def llm_generator_node(state: AgentState) -> dict:
             "RO": "Rostering Off (RO)"
         }
         
-        if act == "apply_leave":
+        if act in ["apply_leave", "request_leave"]:
             code = det.get('leave_type', 'CL')
             l_type_display = LEAVE_DISPLAY_MAP.get(code, code)
             f_date = det.get('from_date', 'start date')
             t_date = det.get('to_date', 'end date')
-            msg = f"I detected you want to apply for **{l_type_display}** from **{f_date}** to **{t_date}**. Shall I proceed and submit this application? (Reply **Yes** or **No**)"
+            reason_txt = det.get('reason', 'Applied via AI Chatbot')
+            msg = (
+                f"I detected you want to apply for **{l_type_display}** from **{f_date}** to **{t_date}** (Reason: *{reason_txt}*).\n\n"
+                f"- **Application Status:** Pending Approval\n\n"
+                f"Do you want to confirm and submit this application? (Reply **Yes** or **No**)"
+            )
         elif act == "apply_wfh":
-            msg = f"I detected you want to apply for **Work From Home** from **{det.get('from_date', 'start date')}** to **{det.get('to_date', 'end date')}**. Shall I submit this WFH request? (Reply **Yes** or **No**)"
-        elif act == "cancel_leave":
-            msg = f"You are asking to cancel leave request ID {det.get('leave_id', '')}. Are you sure you want to cancel this?"
+            f_date = det.get('from_date', 'start date')
+            t_date = det.get('to_date', 'end date')
+            reason_txt = det.get('reason', 'Applied via AI Chatbot')
+            msg = (
+                f"I detected you want to apply for **Work From Home** from **{f_date}** to **{t_date}** (Reason: *{reason_txt}*).\n\n"
+                f"- **Application Status:** Pending HR/Admin Approval\n\n"
+                f"Do you want to confirm and submit this application? (Reply **Yes** or **No**)"
+            )
+        elif act == "log_task":
+            proj = det.get('project', 'General')
+            dur = det.get('duration', 1.0)
+            desc = det.get('description', 'Task diary entry')
+            msg = (
+                f"I detected you want to log a task diary entry:\n"
+                f"- **Project:** {proj}\n"
+                f"- **Duration:** {dur} hour(s)\n"
+                f"- **Task Details:** {desc}\n"
+                f"- **Task Status:** Finished\n\n"
+                f"Do you want to confirm and log this task? (Reply **Yes** or **No**)"
+            )
+        elif act in ["allocate_task", "assign_task"]:
+            title = det.get('task_title') or det.get('title') or det.get('task') or 'Task'
+            assignee = det.get('receiver_id') or det.get('assignee') or det.get('user_id') or 'Employee'
+            deadline = det.get('deadline', 'End of Day')
+            msg = (
+                f"I detected you want to allocate a task:\n"
+                f"- **Task Title:** {title}\n"
+                f"- **Assignee:** {assignee}\n"
+                f"- **Deadline:** {deadline}\n"
+                f"- **Task Status:** In Progress\n\n"
+                f"Do you want to confirm and allocate this task? (Reply **Yes** or **No**)"
+            )
+        elif act == "finish_task":
+            task_id = det.get('task_id', '')
+            msg = (
+                f"You are asking to finish task ID **#{task_id}**.\n\n"
+                f"- **Task Status:** Finished\n\n"
+                f"Do you want to confirm? (Reply **Yes** or **No**)"
+            )
         elif act == "punch_out":
-            msg = "You are trying to punch out for the day. Please confirm if you wish to register your exit punch."
+            msg = "You are trying to register your exit punch for today.\n\n- **Status:** Punched Out\n\nDo you want to confirm? (Reply **Yes** or **No**)"
+        elif act == "cancel_leave":
+            msg = f"You are asking to cancel leave request ID **#{det.get('leave_id', '')}**.\n\n- **Status:** Cancelled\n\nAre you sure you want to cancel this application? (Reply **Yes** or **No**)"
         elif act == "approve_leave":
-            msg = f"Do you want to approve leave request ID {det.get('leave_id', '')}?"
+            msg = f"Do you want to approve leave request ID **#{det.get('leave_id', '')}**?\n\n- **Status:** Approved\n\n(Reply **Yes** or **No**)"
+        elif act == "reject_leave":
+            msg = f"Do you want to reject leave request ID **#{det.get('leave_id', '')}**?\n\n- **Status:** Rejected\n\n(Reply **Yes** or **No**)"
         else:
-            msg = f"Please confirm if you want to execute {act}."
+            msg = f"Please confirm if you want to execute {act}.\n\n- **Status:** Pending Confirmation\n\n(Reply **Yes** or **No**)"
             
         return {
             "messages": [{"role": "assistant", "content": msg}],

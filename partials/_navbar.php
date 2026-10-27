@@ -2821,6 +2821,51 @@ if ($aiChatEnabled && $isAiRoleAllowed):
     40% { transform: scale(1); opacity: 1; }
 }
 
+.ams-chat-confirm-actions {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ams-confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.ams-confirm-btn-yes {
+    background: #16a34a;
+    color: #ffffff;
+}
+.ams-confirm-btn-yes:hover {
+    background: #15803d;
+    transform: translateY(-1px);
+}
+.ams-confirm-btn-no {
+    background: #ef4444;
+    color: #ffffff;
+}
+.ams-confirm-btn-no:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+.ams-confirm-btn:active {
+    transform: translateY(0);
+}
+body.dark-theme .ams-chat-confirm-actions {
+    border-top-color: #334155;
+}
+
 .ams-chat-input-area {
     padding: 8px 10px;
     background: #ffffff;
@@ -3165,8 +3210,11 @@ if ($aiChatEnabled && $isAiRoleAllowed):
 .ams-hub-feature-panel.active {
     display: block;
 }
+.ams-hub-mode-content[data-mode="prompt"] {
+    display: block;
+}
 
-/* In-Chat Form Card */
+/* Hub Cards */
 .ams-hub-form-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -3430,7 +3478,7 @@ if ($aiChatEnabled && $isAiRoleAllowed):
 </style>
 
 <?php
-// Pre-fetch active projects & active employees for Chatbot In-Chat Forms
+// Pre-fetch active projects & active employees
 $ams_chat_projects = [];
 $ams_chat_employees = [];
 if (isset($con) && $con instanceof mysqli) {
@@ -3551,13 +3599,13 @@ if (isset($con) && $con instanceof mysqli) {
             <div class="ams-chat-chips-container">
                 <button class="ams-chat-chip" data-prompt="check my balance leave"><i class="fa-solid fa-calendar-days" style="color:#2563eb;"></i> Leave Balance</button>
                 <button class="ams-chat-chip" data-prompt="check today punch out status"><i class="fa-solid fa-fingerprint" style="color:#16a34a;"></i> Punch Status</button>
-                <button class="ams-chat-chip ams-hub-chip" data-open-hub="leave"><i class="fa-solid fa-file-pen" style="color:#0284c7;"></i> Leave Form</button>
-                <button class="ams-chat-chip ams-hub-chip" data-open-hub="wfh"><i class="fa-solid fa-house-laptop" style="color:#6366f1;"></i> WFH Form</button>
+                <button class="ams-chat-chip ams-hub-chip" data-open-hub="leave"><i class="fa-solid fa-calendar-days" style="color:#0284c7;"></i> Leave Prompts</button>
+                <button class="ams-chat-chip ams-hub-chip" data-open-hub="wfh"><i class="fa-solid fa-house-laptop" style="color:#6366f1;"></i> WFH Prompts</button>
                 <button class="ams-chat-chip" data-prompt="apply for work from home tomorrow due to urgent personal work"><i class="fa-solid fa-laptop-house" style="color:#8b5cf6;"></i> Apply WFH</button>
                 <button class="ams-chat-chip" data-prompt="check my wfh status"><i class="fa-solid fa-circle-question" style="color:#0284c7;"></i> WFH Status</button>
                 <button class="ams-chat-chip ams-hub-chip" data-open-hub="task_assign"><i class="fa-solid fa-user-plus" style="color:#10b981;"></i> Assign Task</button>
                 <button class="ams-chat-chip ams-hub-chip" data-open-hub="task_log"><i class="fa-solid fa-list-check" style="color:#d97706;"></i> Log Task</button>
-                <button class="ams-chat-chip ams-hub-chip" data-open-hub="tour"><i class="fa-solid fa-plane-departure" style="color:#0284c7;"></i> Tour Form</button>
+                <button class="ams-chat-chip ams-hub-chip" data-open-hub="tour"><i class="fa-solid fa-plane-departure" style="color:#0284c7;"></i> Tour Prompts</button>
                 <button class="ams-chat-chip" data-prompt="what is the late mark policy?"><i class="fa-solid fa-book-bookmark" style="color:#64748b;"></i> Late Policy</button>
             </div>
 
@@ -3568,7 +3616,7 @@ if (isset($con) && $con instanceof mysqli) {
                         Welcome to <strong>SETTribe AMS Assistant</strong>. How may I assist you with your attendance, leaves, tasks, or policies today?
                         <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;display:flex;gap:6px;flex-wrap:wrap;">
                             <button class="ams-use-prompt-btn ams-hub-open-trigger" data-open-hub="leave" style="font-size:10.5px;">
-                                <i class="fa-solid fa-file-pen"></i> Leave Form
+                                <i class="fa-solid fa-calendar-days"></i> Leave Prompts
                             </button>
                             <button class="ams-use-prompt-btn ams-hub-open-trigger" data-open-hub="wfh" style="font-size:10.5px;">
                                 <i class="fa-solid fa-house-laptop"></i> Apply WFH
@@ -3625,12 +3673,9 @@ if (isset($con) && $con instanceof mysqli) {
                 </button>
             </div>
 
-            <!-- Mode Switcher: Form vs Demo Prompt -->
+            <!-- AI Prompt Demo Header -->
             <div class="ams-hub-mode-bar">
-                <button type="button" class="ams-hub-mode-btn active" data-mode="form">
-                    <i class="fa-solid fa-file-pen"></i> In-Chat Form
-                </button>
-                <button type="button" class="ams-hub-mode-btn" data-mode="prompt">
+                <button type="button" class="ams-hub-mode-btn active" data-mode="prompt">
                     <i class="fa-solid fa-lightbulb"></i> AI Prompt Demo
                 </button>
             </div>
@@ -3639,55 +3684,8 @@ if (isset($con) && $con instanceof mysqli) {
                 
                 <!-- ════════ 1. LEAVE APPLICATION FEATURE ════════ -->
                 <div id="ams-hub-panel-leave" class="ams-hub-feature-panel active">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-calendar-plus" style="color:#2563eb;"></i> Apply Leave
-                            </div>
-                            <div class="ams-hub-form-subtitle">Fill details directly. Request will be submitted to HR and Reporting Manager.</div>
-                            
-                            <div id="ams-hub-alert-leave" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-apply-leave">
-                                <input type="hidden" name="action" value="apply_leave">
-                                
-                                <div class="ams-form-group">
-                                    <label>Leave Type</label>
-                                    <select name="leave_type" required>
-                                        <option value="CL">Casual Leave (CL)</option>
-                                        <option value="SL">Sick Leave (SL)</option>
-                                        <option value="PL">Personal Leave (PL)</option>
-                                        <option value="TD">Travel Days (TD)</option>
-                                        <option value="RO">Roster Off (RO - Saturday Only)</option>
-                                    </select>
-                                </div>
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>From Date</label>
-                                        <input type="date" name="from_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>To Date</label>
-                                        <input type="date" name="to_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Reason for Leave</label>
-                                    <textarea name="reason" rows="2" placeholder="e.g. Family emergency, personal work..." required></textarea>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn">
-                                    <i class="fa-solid fa-paper-plane"></i> Submit Leave Application
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Prompt Feature:</strong> You can apply for leaves or check balances simply by typing naturally in the AI Chat. Click <strong>Use Prompt</strong> to try any example right away!
                         </div>
@@ -3729,64 +3727,8 @@ if (isset($con) && $con instanceof mysqli) {
 
                 <!-- ════════ WORK FROM HOME (WFH) FEATURE ════════ -->
                 <div id="ams-hub-panel-wfh" class="ams-hub-feature-panel">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-house-laptop" style="color:#6366f1;"></i> Apply Work From Home (WFH)
-                            </div>
-                            <div class="ams-hub-form-subtitle">Fill request details below. Sent directly to HR / Admin for website approval.</div>
-                            
-                            <div id="ams-hub-alert-wfh" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-apply-wfh">
-                                <input type="hidden" name="action" value="apply_wfh">
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>From Date <span style="color:#ef4444;">*</span></label>
-                                        <input type="date" name="from_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>To Date <span style="color:#ef4444;">*</span></label>
-                                        <input type="date" name="to_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Reason for WFH <span style="color:#ef4444;">*</span></label>
-                                    <textarea name="reason" rows="2" placeholder="e.g. Health recovery, home maintenance, personal urgent work..." required></textarea>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Approval From <span style="color:#ef4444;">*</span></label>
-                                    <select name="approved_by" required>
-                                        <option value="">-- Select Approver (HR / Admin) --</option>
-                                        <?php if (!empty($ams_chat_wfh_approvers)): ?>
-                                            <?php foreach ($ams_chat_wfh_approvers as $appr): ?>
-                                                <option value="<?php echo htmlspecialchars($appr['userId']); ?>">
-                                                    <?php echo htmlspecialchars($appr['fullName'] . ' (' . ($appr['designation'] ?: 'Approver') . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <?php foreach ($ams_chat_employees as $emp): ?>
-                                                <option value="<?php echo htmlspecialchars($emp['userId']); ?>">
-                                                    <?php echo htmlspecialchars($emp['fullName'] . ' (' . ($emp['designation'] ?: 'Team Member') . ')'); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </select>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-                                    <i class="fa-solid fa-paper-plane"></i> Submit WFH Request
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Chat WFH Prompts:</strong> You can apply for Work From Home or check approval status directly by typing in the chat. Click <strong>Use Prompt</strong> to try any example!
                         </div>
@@ -3839,84 +3781,8 @@ if (isset($con) && $con instanceof mysqli) {
 
                 <!-- ════════ 2. TASK ALLOCATION FEATURE ════════ -->
                 <div id="ams-hub-panel-task_assign" class="ams-hub-feature-panel">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-user-plus" style="color:#10b981;"></i> Assign Task to Employee
-                            </div>
-                            <div class="ams-hub-form-subtitle">Assign task directly. Employee and Resource Manager will receive push notification.</div>
-
-                            <div id="ams-hub-alert-task_assign" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-allocate-task">
-                                <input type="hidden" name="action" value="allocate_task">
-                                
-                                <div class="ams-form-group">
-                                    <label>Assign To (Employee / Intern)</label>
-                                    <select name="receiver_id" required>
-                                        <option value="">-- Select Employee --</option>
-                                        <?php foreach ($ams_chat_employees as $emp): ?>
-                                            <option value="<?php echo htmlspecialchars($emp['userId']); ?>">
-                                                <?php echo htmlspecialchars($emp['fullName'] . ' (' . ($emp['designation'] ?: 'Team Member') . ')'); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>Project</label>
-                                        <select name="project_name">
-                                            <option value="General">General / Internal</option>
-                                            <?php foreach ($ams_chat_projects as $proj): ?>
-                                                <option value="<?php echo htmlspecialchars($proj['projectName']); ?>">
-                                                    <?php echo htmlspecialchars($proj['projectName']); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>Task Type</label>
-                                        <select name="task_type">
-                                            <option value="Project work">Project work</option>
-                                            <option value="Bug Fix">Bug Fix</option>
-                                            <option value="R&D">R&D</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Task Title / Summary</label>
-                                    <input type="text" name="task_title" placeholder="e.g. Implement user authentication flow" required>
-                                </div>
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>Deadline Date</label>
-                                        <input type="date" name="deadline_date" value="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>Deadline Time</label>
-                                        <input type="time" name="deadline_time" value="18:30" required>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Remarks / Instructions</label>
-                                    <textarea name="remark" rows="2" placeholder="Optional notes for assignee..."></textarea>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn" style="background:#10b981;">
-                                    <i class="fa-solid fa-check"></i> Assign Task & Notify
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Task Prompts:</strong> You can assign tasks by speaking directly to the AI.
                         </div>
@@ -3947,68 +3813,8 @@ if (isset($con) && $con instanceof mysqli) {
 
                 <!-- ════════ 3. TASK LOGGING (DIARY) FEATURE ════════ -->
                 <div id="ams-hub-panel-task_log" class="ams-hub-feature-panel">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-list-check" style="color:#f59e0b;"></i> Log Daily Task Entry
-                            </div>
-                            <div class="ams-hub-form-subtitle">Record your completed hours and work segment directly in the Task Diary.</div>
-
-                            <div id="ams-hub-alert-task_log" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-log-task">
-                                <input type="hidden" name="action" value="log_task">
-                                
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>Project Name</label>
-                                        <select name="project_name" required>
-                                            <option value="General">General / Internal</option>
-                                            <?php foreach ($ams_chat_projects as $proj): ?>
-                                                <option value="<?php echo htmlspecialchars($proj['projectName']); ?>">
-                                                    <?php echo htmlspecialchars($proj['projectName']); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>Work Type</label>
-                                        <select name="work_type">
-                                            <option value="Project Work">Project Work</option>
-                                            <option value="Bug Fix">Bug Fix</option>
-                                            <option value="Meeting">Meeting</option>
-                                            <option value="Documentation">Documentation</option>
-                                            <option value="Code Review">Code Review</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Task Description</label>
-                                    <textarea name="task_desc" rows="2" placeholder="What did you work on?" required></textarea>
-                                </div>
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>Duration (Hours)</label>
-                                        <input type="number" step="0.1" min="0.1" max="12" name="duration_hours" value="1.5" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>Remark (Optional)</label>
-                                        <input type="text" name="remark" placeholder="e.g. PR merged, verified">
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn" style="background:#f59e0b;">
-                                    <i class="fa-solid fa-clock-rotate-left"></i> Log Task Diary Entry
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Task Logging Prompts:</strong> Log your work with a single sentence.
                         </div>
@@ -4039,56 +3845,8 @@ if (isset($con) && $con instanceof mysqli) {
 
                 <!-- ════════ 4. TOUR APPLICATION FEATURE ════════ -->
                 <div id="ams-hub-panel-tour" class="ams-hub-feature-panel">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-plane-departure" style="color:#0284c7;"></i> Apply for Official Tour
-                            </div>
-                            <div class="ams-hub-form-subtitle">Submit client visit or official tour. HR and Management will be notified.</div>
-
-                            <div id="ams-hub-alert-tour" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-apply-tour">
-                                <input type="hidden" name="action" value="apply_tour">
-                                
-                                <div class="ams-form-group">
-                                    <label>Project</label>
-                                    <select name="project_id" required>
-                                        <option value="">-- Select Project --</option>
-                                        <?php foreach ($ams_chat_projects as $proj): ?>
-                                            <option value="<?php echo htmlspecialchars($proj['projectId']); ?>">
-                                                <?php echo htmlspecialchars($proj['projectName']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>From Date</label>
-                                        <input type="date" name="from_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>To Date</label>
-                                        <input type="date" name="to_date" min="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Tour Purpose / Location</label>
-                                    <textarea name="reason" rows="2" placeholder="e.g. Client deployment and training in Pune..." required></textarea>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn" style="background:#0284c7;">
-                                    <i class="fa-solid fa-paper-plane"></i> Submit Tour Application
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Tour Prompts:</strong> Ask the AI to apply for a tour or verify requirements.
                         </div>
@@ -4119,44 +3877,8 @@ if (isset($con) && $con instanceof mysqli) {
 
                 <!-- ════════ 5. LATE PUNCH IN INTIMATION ════════ -->
                 <div id="ams-hub-panel-late_punch" class="ams-hub-feature-panel">
-                    <!-- Mode: Form View -->
-                    <div class="ams-hub-mode-content" data-mode="form">
-                        <div class="ams-hub-form-card">
-                            <div class="ams-hub-form-title">
-                                <i class="fa-solid fa-clock" style="color:#8b5cf6;"></i> Late Punch-In Intimation
-                            </div>
-                            <div class="ams-hub-form-subtitle">Inform HR in advance if you will be delayed. Avoids penalty marks upon approval.</div>
-
-                            <div id="ams-hub-alert-late_punch" class="ams-hub-alert"></div>
-
-                            <form id="ams-form-late-punch">
-                                <input type="hidden" name="action" value="late_punch_in">
-                                
-                                <div class="ams-form-row">
-                                    <div class="ams-form-group">
-                                        <label>Date</label>
-                                        <input type="date" name="date" value="<?php echo date('Y-m-d'); ?>" required>
-                                    </div>
-                                    <div class="ams-form-group">
-                                        <label>Expected Arrival Time</label>
-                                        <input type="time" name="delayed_time" value="10:15" required>
-                                    </div>
-                                </div>
-
-                                <div class="ams-form-group">
-                                    <label>Reason for Delay</label>
-                                    <textarea name="reason" rows="2" placeholder="e.g. Traffic congestion, bike breakdown, hospital visit..." required></textarea>
-                                </div>
-
-                                <button type="submit" class="ams-hub-submit-btn" style="background:#8b5cf6;">
-                                    <i class="fa-solid fa-bell"></i> Send Intimation to HR
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- Mode: Prompt Demo View -->
-                    <div class="ams-hub-mode-content" data-mode="prompt" style="display:none;">
+                    <div class="ams-hub-mode-content" data-mode="prompt">
                         <div class="ams-hub-prompt-intro">
                             <strong><i class="fa-solid fa-wand-magic-sparkles"></i> AI Late Intimation Prompts:</strong> Intimate HR or ask about timing policies.
                         </div>
@@ -4249,7 +3971,7 @@ if (isset($con) && $con instanceof mysqli) {
                 Welcome to <strong>SETTribe AMS Assistant</strong>. How may I assist you with your attendance, leaves, tasks, or policies today?
                 <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="ams-use-prompt-btn ams-hub-open-trigger" data-open-hub="leave" style="font-size:10.5px;">
-                        <i class="fa-solid fa-file-pen"></i> Leave Form
+                        <i class="fa-solid fa-calendar-days"></i> Leave Prompts
                     </button>
                     <button class="ams-use-prompt-btn ams-hub-open-trigger" data-open-hub="wfh" style="font-size:10.5px;">
                         <i class="fa-solid fa-house-laptop"></i> Apply WFH
@@ -4380,37 +4102,35 @@ if (isset($con) && $con instanceof mysqli) {
         });
     });
 
-    // ── Hub Sub-Mode Switcher (Form vs Demo Prompt) ───────────────────────────
+    // ── Hub Sub-Mode Controller (AI Prompt Demo) ───────────────────────────
     const modeBtns = document.querySelectorAll('.ams-hub-mode-btn');
     modeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const mode = this.getAttribute('data-mode');
+            const mode = this.getAttribute('data-mode') || 'prompt';
             modeBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === mode));
             
             document.querySelectorAll('.ams-hub-feature-panel').forEach(panel => {
-                const formViews = panel.querySelectorAll('.ams-hub-mode-content[data-mode="form"]');
                 const promptViews = panel.querySelectorAll('.ams-hub-mode-content[data-mode="prompt"]');
-                formViews.forEach(v => v.style.display = (mode === 'form' ? 'block' : 'none'));
-                promptViews.forEach(v => v.style.display = (mode === 'prompt' ? 'block' : 'none'));
+                promptViews.forEach(v => v.style.display = 'block');
             });
         });
     });
 
     // Helper: Open specific Hub category directly
-    function openHubFeature(catName, mode = 'form') {
+    function openHubFeature(catName, mode = 'prompt') {
         switchMainTab('hub');
         selectHubCategory(catName);
         const targetModeBtn = document.querySelector(`.ams-hub-mode-btn[data-mode="${mode}"]`);
         if (targetModeBtn) targetModeBtn.click();
     }
 
-    // Delegate chips that open Hub forms directly (works for static and restored HTML)
+    // Delegate chips that open Hub prompts directly (works for static and restored HTML)
     document.addEventListener('click', function(e) {
         const chip = e.target.closest('.ams-hub-chip, .ams-hub-open-trigger');
         if (chip) {
             e.stopPropagation();
             const cat = chip.getAttribute('data-open-hub');
-            if (cat) openHubFeature(cat, 'form');
+            if (cat) openHubFeature(cat, 'prompt');
         }
     });
 
@@ -4426,93 +4146,6 @@ if (isset($con) && $con instanceof mysqli) {
             }
         }
     });
-
-    // ── In-Chat Form AJAX Submissions ──────────────────────────────────────────
-    function handleFormSubmit(formId, alertId, catName) {
-        const form = document.getElementById(formId);
-        const alertBox = document.getElementById(alertId);
-        if (!form) return;
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Submit';
-
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-            }
-            if (alertBox) {
-                alertBox.className = 'ams-hub-alert';
-                alertBox.style.display = 'none';
-            }
-
-            const formData = new FormData(form);
-            const payload = {};
-            formData.forEach((val, key) => { payload[key] = val; });
-
-            fetch(actionSubmitUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHtml;
-                }
-
-                if (data && data.success) {
-                    if (alertBox) {
-                        alertBox.className = 'ams-hub-alert success';
-                        alertBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> <div><strong>Success!</strong> ${escapeHtml(data.message)}</div>`;
-                    }
-                    form.reset();
-
-                    // Push automated receipt into AI Chat stream
-                    const receiptHtml = `
-                        <div class="ams-chat-message bot">
-                            <div class="ams-chat-msg-avatar"><i class="fa-solid fa-robot"></i></div>
-                            <div class="ams-chat-msg-bubble">
-                                <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> <strong>${escapeHtml(data.message)}</strong>
-                                <div style="margin-top:6px;font-size:11px;color:#64748b;">
-                                    Reference ID: <code>${escapeHtml(data.wfh_id || data.leave_id || data.task_id || data.tour_id || data.id || 'Confirmed')}</code> &bull; Dispatched to HR / Management.
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    chatMessages.insertAdjacentHTML('beforeend', receiptHtml);
-                    scrollToBottom();
-                    saveChatState();
-                } else {
-                    const err = data.error || 'Submission failed. Please check your inputs.';
-                    if (alertBox) {
-                        alertBox.className = 'ams-hub-alert error';
-                        alertBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <div><strong>Error:</strong> ${escapeHtml(err)}</div>`;
-                    }
-                }
-            })
-            .catch(err => {
-                console.error("Form submit error:", err);
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnHtml;
-                }
-                if (alertBox) {
-                    alertBox.className = 'ams-hub-alert error';
-                    alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <div>Network error. Please try again.</div>`;
-                }
-            });
-        });
-    }
-
-    handleFormSubmit('ams-form-apply-leave', 'ams-hub-alert-leave', 'leave');
-    handleFormSubmit('ams-form-apply-wfh', 'ams-hub-alert-wfh', 'wfh');
-    handleFormSubmit('ams-form-allocate-task', 'ams-hub-alert-task_assign', 'task_assign');
-    handleFormSubmit('ams-form-log-task', 'ams-hub-alert-task_log', 'task_log');
-    handleFormSubmit('ams-form-apply-tour', 'ams-hub-alert-tour', 'tour');
-    handleFormSubmit('ams-form-late-punch', 'ams-hub-alert-late_punch', 'late_punch');
 
     // ── History Panel Controller ───────────────────────────────────────────────
     function loadChatHistory() {
@@ -4760,10 +4393,33 @@ if (isset($con) && $con instanceof mysqli) {
             if (data && data.success) {
                 const replyText = data.response || data.reply || (typeof data.message === 'string' ? data.message : '');
                 const safeContent = renderSafeMarkdown(replyText);
+                
+                // Determine if confirmation options (Yes / No) should be presented
+                const isConfirmation = data.confirmation_required === true || 
+                                       /reply\s+\*?\*?yes\*?\*?\s+(or\s+)?\*?\*?no\*?\*?/i.test(replyText) ||
+                                       (/confirm/i.test(replyText) && /\byes\b/i.test(replyText) && /\bno\b/i.test(replyText));
+
+                let confirmButtonsHtml = '';
+                if (isConfirmation) {
+                    confirmButtonsHtml = `
+                        <div class="ams-chat-confirm-actions">
+                            <button type="button" class="ams-confirm-btn ams-confirm-btn-yes" data-confirm-choice="Yes">
+                                <i class="fa-solid fa-check"></i> Yes
+                            </button>
+                            <button type="button" class="ams-confirm-btn ams-confirm-btn-no" data-confirm-choice="No">
+                                <i class="fa-solid fa-xmark"></i> No
+                            </button>
+                        </div>
+                    `;
+                }
+
                 const botMsgHtml = `
                     <div class="ams-chat-message bot">
                         <div class="ams-chat-msg-avatar"><i class="fa-solid fa-robot"></i></div>
-                        <div class="ams-chat-msg-bubble">${safeContent}</div>
+                        <div class="ams-chat-msg-bubble">
+                            ${safeContent}
+                            ${confirmButtonsHtml}
+                        </div>
                     </div>
                 `;
                 chatMessages.insertAdjacentHTML('beforeend', botMsgHtml);
@@ -4797,6 +4453,26 @@ if (isset($con) && $con instanceof mysqli) {
             scrollToBottom();
             saveChatState();
         });
+    });
+
+    // Delegated click handler for quick Yes / No confirmation buttons
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.ams-confirm-btn');
+        if (!btn) return;
+        const choice = btn.getAttribute('data-confirm-choice') || 'Yes';
+
+        const container = btn.closest('.ams-chat-confirm-actions');
+        if (container) {
+            container.querySelectorAll('.ams-confirm-btn').forEach(b => {
+                b.disabled = true;
+                b.style.opacity = '0.5';
+                b.style.pointerEvents = 'none';
+            });
+            btn.style.boxShadow = '0 0 0 2px #2563eb';
+        }
+
+        chatInput.value = choice;
+        chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     });
 
     function escapeHtml(text) {

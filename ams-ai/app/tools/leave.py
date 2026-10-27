@@ -28,6 +28,90 @@ def get_leave_balances(user_id: str) -> dict:
         logger.error(f"Error fetching leave balances: {e}")
         return {"success": False, "message": f"Database error: {e}"}
 
+def check_existing_application(user_id: str, from_date: str, to_date: str) -> dict:
+    """
+    Check if the user has already applied on or overlapping the specified date range.
+    Returns details of the existing application (type, date range, status) if found.
+    """
+    try:
+        # 1. Check existing leaves
+        overlap_leaves = execute_query(
+            """
+            SELECT id, leave_name, leave_type, from_date, to_date, status FROM leaves 
+            WHERE userId = ? 
+              AND status NOT IN ('Cancelled', 'Rejected') 
+              AND leave_name NOT LIKE '%Auto Leave%' 
+              AND leave_type != 'Auto'
+              AND from_date <= ? AND to_date >= ?
+            LIMIT 1
+            """,
+            (user_id, to_date, from_date),
+            fetch="one"
+        )
+        if overlap_leaves:
+            st = overlap_leaves.get("status") or "Pending"
+            lt = overlap_leaves.get("leave_type") or overlap_leaves.get("leave_name") or "Leave"
+            f_d = str(overlap_leaves.get("from_date") or "")
+            t_d = str(overlap_leaves.get("to_date") or "")
+            range_str = f"{f_d} to {t_d}" if f_d != t_d else f_d
+            return {
+                "has_applied": True,
+                "type": "Leave",
+                "status": st,
+                "message": f"You already applied on this date. Your previous leave application ({lt} for {range_str}) has status: {st}. Please choose another date."
+            }
+
+        # 2. Check existing WFH requests
+        overlap_wfh = execute_query(
+            """
+            SELECT wfh_id, status, fromDate, toDate FROM wfhRequests 
+            WHERE userid = ? AND status NOT IN ('Rejected', 'Cancelled') 
+              AND fromDate <= ? AND toDate >= ?
+            LIMIT 1
+            """,
+            (user_id, to_date, from_date),
+            fetch="one"
+        )
+        if overlap_wfh:
+            st = overlap_wfh.get("status") or "Pending"
+            f_d = str(overlap_wfh.get("fromDate") or "")
+            t_d = str(overlap_wfh.get("toDate") or "")
+            range_str = f"{f_d} to {t_d}" if f_d != t_d else f_d
+            return {
+                "has_applied": True,
+                "type": "Work From Home",
+                "status": st,
+                "message": f"You already applied on this date. Your previous Work From Home request ({range_str}) has status: {st}. Please choose another date."
+            }
+
+        # 3. Check existing Tour requests
+        overlap_tour = execute_query(
+            """
+            SELECT id, status, fromDate, toDate FROM tour 
+            WHERE userId = ? AND status NOT IN ('Rejected', 'Cancelled') 
+              AND fromDate <= ? AND toDate >= ?
+            LIMIT 1
+            """,
+            (user_id, to_date, from_date),
+            fetch="one"
+        )
+        if overlap_tour:
+            st = overlap_tour.get("status") or "Approved"
+            f_d = str(overlap_tour.get("fromDate") or "")
+            t_d = str(overlap_tour.get("toDate") or "")
+            range_str = f"{f_d} to {t_d}" if f_d != t_d else f_d
+            return {
+                "has_applied": True,
+                "type": "Tour",
+                "status": st,
+                "message": f"You already applied on this date. Your previous Tour application ({range_str}) has status: {st}. Please choose another date."
+            }
+
+    except Exception as e:
+        logger.error(f"Error checking existing application: {e}")
+
+    return {"has_applied": False}
+
 def _calculate_leave_days(from_date: str, to_date: str) -> int:
     """Calculate the number of leave days excluding Sundays."""
     s_date = datetime.strptime(from_date, "%Y-%m-%d").date()
@@ -77,50 +161,10 @@ def apply_leave(user_id: str, leave_type: str, from_date: str, to_date: str, rea
                 return {"success": False, "message": "Rostering Off can only be applied on Saturdays."}
             curr += timedelta(days=1)
 
-    # 5. Overlap check in leaves table
-    overlap_leaves = execute_query(
-        """
-        SELECT id FROM leaves 
-        WHERE userId = ? 
-          AND status NOT IN ('Cancelled', 'Rejected') 
-          AND leave_name NOT LIKE '%Auto Leave%' 
-          AND leave_type != 'Auto'
-          AND from_date <= ? AND to_date >= ?
-        LIMIT 1
-        """,
-        (user_id, to_date, from_date),
-        fetch="one"
-    )
-    if overlap_leaves:
-        return {"success": False, "message": "You already have leave applied during this period."}
-
-    # 6. Overlap WFH check
-    overlap_wfh = execute_query(
-        """
-        SELECT wfh_id FROM wfhRequests 
-        WHERE userid = ? AND status NOT IN ('Rejected', 'Cancelled') 
-          AND fromDate <= ? AND toDate >= ?
-        LIMIT 1
-        """,
-        (user_id, to_date, from_date),
-        fetch="one"
-    )
-    if overlap_wfh:
-        return {"success": False, "message": "You have already applied for WFH during this date range."}
-
-    # 7. Overlap Tour check
-    overlap_tour = execute_query(
-        """
-        SELECT id FROM tour 
-        WHERE userId = ? AND status NOT IN ('Rejected', 'Cancelled') 
-          AND fromDate <= ? AND toDate >= ?
-        LIMIT 1
-        """,
-        (user_id, to_date, from_date),
-        fetch="one"
-    )
-    if overlap_tour:
-        return {"success": False, "message": "You have already applied for a Tour during this date range."}
+    # 5. Overlap check for existing leave, WFH, or tour on that date
+    existing_app = check_existing_application(user_id, from_date, to_date)
+    if existing_app.get("has_applied"):
+        return {"success": False, "message": existing_app.get("message")}
 
     # 8. RO Monthly Cap check (for offline interns only: max 2 days per month)
     if leave_type == "RO":

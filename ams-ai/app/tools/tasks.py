@@ -317,3 +317,39 @@ def finish_task(user_id: str, task_id: int) -> dict:
     except Exception as e:
         logger.error(f"Error finishing task: {e}")
         return {"success": False, "message": f"Database update failed: {e}"}
+
+def allocate_task(allocator_id: str, receiver_id: str, task_title: str, project_name: str = None, deadline: str = None, remark: str = "Assigned via AI Assistant", status: str = "In Progress") -> dict:
+    """Allocate a task to another employee in task_allocation table."""
+    try:
+        if not receiver_id or not task_title:
+            return {"success": False, "message": "Assignee Employee and Task Title are required."}
+            
+        emp = execute_query("SELECT userId, fullName FROM signup WHERE userId = ? LIMIT 1", (receiver_id,), fetch="one")
+        if not emp:
+            emp = execute_query("SELECT userId, fullName FROM signup WHERE fullName LIKE ? LIMIT 1", (f"%{receiver_id}%",), fetch="one")
+            if emp:
+                receiver_id = emp["userId"]
+        
+        if not emp:
+            return {"success": False, "message": f"Could not find employee '{receiver_id}'. Please verify user ID or name."}
+            
+        receiver_name = emp.get("fullName", receiver_id)
+        
+        if not deadline:
+            deadline = datetime.now().strftime("%Y-%m-%d 18:30:00")
+            
+        execute_query(
+            """
+            INSERT INTO task_allocation (allocator_id, receiver_id, task_type, project_name, task_title, remark, deadline, status, created_at, updated_at)
+            VALUES (?, ?, 'Project work', ?, ?, ?, ?, ?, NOW(), NOW())
+            """,
+            (allocator_id, receiver_id, project_name, task_title, remark, deadline, status),
+            fetch="none"
+        )
+        return {
+            "success": True,
+            "message": f"Task '{task_title}' successfully assigned to {receiver_name} with status: {status} (Deadline: {deadline})."
+        }
+    except Exception as e:
+        logger.error(f"Error allocating task: {e}")
+        return {"success": False, "message": f"Database error allocating task: {e}"}

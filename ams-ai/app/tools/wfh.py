@@ -2,6 +2,7 @@ import logging
 from datetime import date, datetime
 
 from app.db.mysql import execute_query
+from app.tools.leave import check_existing_application
 
 logger = logging.getLogger("ams-ai.tools.wfh")
 
@@ -50,26 +51,9 @@ def apply_wfh(user_id: str, from_date: str, to_date: str, reason: str) -> dict:
         if not approver:
             return {"success": False, "message": "No active WFH approver is available. Please contact HR."}
 
-        overlap = execute_query(
-            """SELECT wfh_id FROM wfhRequests
-               WHERE userid = ? AND status NOT IN ('Rejected', 'Cancelled')
-                 AND fromDate <= ? AND toDate >= ? LIMIT 1""",
-            (user_id, to_date, from_date),
-            fetch="one"
-        )
-        if overlap:
-            return {"success": False, "message": "You already have a WFH request during this date range."}
-
-        leave_overlap = execute_query(
-            """SELECT leave_id FROM leaves
-               WHERE userId = ? AND status NOT IN ('Rejected', 'Cancelled')
-                 AND leave_name NOT LIKE '%Auto Leave%'
-                 AND from_date <= ? AND to_date >= ? LIMIT 1""",
-            (user_id, to_date, from_date),
-            fetch="one"
-        )
-        if leave_overlap:
-            return {"success": False, "message": "You have an active or pending leave during those dates, so WFH cannot be applied."}
+        existing_app = check_existing_application(user_id, from_date, to_date)
+        if existing_app.get("has_applied"):
+            return {"success": False, "message": existing_app.get("message")}
 
         execute_query(
             """INSERT INTO wfhRequests

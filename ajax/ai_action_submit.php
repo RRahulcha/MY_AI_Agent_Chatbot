@@ -86,12 +86,69 @@ if ($action === 'apply_leave') {
         exit;
     }
 
-    $leaveId = 'LEV' . date('Ymd') . rand(1000, 9999);
-    $safeLeaveId = mysqli_real_escape_string($con, $leaveId);
     $safeType    = mysqli_real_escape_string($con, $leaveType);
     $safeFrom    = mysqli_real_escape_string($con, $fromDate);
     $safeTo      = mysqli_real_escape_string($con, $toDate);
     $safeReason  = mysqli_real_escape_string($con, $reason);
+
+    // Overlap check with existing leaves
+    $chkLeave = mysqli_query($con, "
+        SELECT leave_type, leave_name, from_date, to_date, status FROM leaves 
+        WHERE userId = '" . mysqli_real_escape_string($con, $userId) . "' 
+          AND status NOT IN ('Rejected', 'Cancelled')
+          AND leave_name NOT LIKE '%Auto Leave%'
+          AND from_date <= '$safeTo' AND to_date >= '$safeFrom'
+        LIMIT 1
+    ");
+    if ($chkLeave && ($lRow = mysqli_fetch_assoc($chkLeave))) {
+        $prevType = !empty($lRow['leave_type']) ? $lRow['leave_type'] : $lRow['leave_name'];
+        $prevStatus = $lRow['status'] ?? 'Pending';
+        $prevRange = ($lRow['from_date'] === $lRow['to_date']) ? $lRow['from_date'] : "{$lRow['from_date']} to {$lRow['to_date']}";
+        echo json_encode([
+            'success' => false,
+            'error' => "You already applied on this date. Your previous leave application ($prevType for $prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    // Overlap check with existing WFH requests
+    $chkWfh = mysqli_query($con, "
+        SELECT fromDate, toDate, status FROM wfhRequests 
+        WHERE userid = '" . mysqli_real_escape_string($con, $userId) . "' 
+          AND status NOT IN ('Rejected', 'Cancelled')
+          AND fromDate <= '$safeTo' AND toDate >= '$safeFrom'
+        LIMIT 1
+    ");
+    if ($chkWfh && ($wRow = mysqli_fetch_assoc($chkWfh))) {
+        $prevStatus = $wRow['status'] ?? 'Pending';
+        $prevRange = ($wRow['fromDate'] === $wRow['toDate']) ? $wRow['fromDate'] : "{$wRow['fromDate']} to {$wRow['toDate']}";
+        echo json_encode([
+            'success' => false,
+            'error' => "You already applied on this date. Your previous Work From Home request ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    // Overlap check with existing Tour requests
+    $chkTour = mysqli_query($con, "
+        SELECT fromDate, toDate, status FROM tour 
+        WHERE userId = '" . mysqli_real_escape_string($con, $userId) . "' 
+          AND status NOT IN ('Rejected', 'Cancelled')
+          AND fromDate <= '$safeTo' AND toDate >= '$safeFrom'
+        LIMIT 1
+    ");
+    if ($chkTour && ($tRow = mysqli_fetch_assoc($chkTour))) {
+        $prevStatus = $tRow['status'] ?? 'Approved';
+        $prevRange = ($tRow['fromDate'] === $tRow['toDate']) ? $tRow['fromDate'] : "{$tRow['fromDate']} to {$tRow['toDate']}";
+        echo json_encode([
+            'success' => false,
+            'error' => "You already applied on this date. Your previous Tour application ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    $leaveId = 'LEV' . date('Ymd') . rand(1000, 9999);
+    $safeLeaveId = mysqli_real_escape_string($con, $leaveId);
 
     $leaveNameMap = [
         'CL' => 'Casual Leave',
@@ -273,14 +330,55 @@ if ($action === 'apply_tour') {
     $safeTo   = mysqli_real_escape_string($con, $toDate);
     $safeReason = mysqli_real_escape_string($con, $reason);
 
-    // Overlapping leave check
+    // Overlap check with existing leaves
     $chk = mysqli_query($con, "
-        SELECT leave_id FROM leaves 
+        SELECT leave_id, leave_type, leave_name, status, from_date, to_date FROM leaves 
         WHERE userId = '$userId' AND status NOT IN ('Rejected', 'Cancelled')
           AND from_date <= '$safeTo' AND to_date >= '$safeFrom'
+        LIMIT 1
     ");
-    if ($chk && mysqli_num_rows($chk) > 0) {
-        echo json_encode(['success' => false, 'error' => 'You have an active or pending leave overlapping these tour dates. Tour cannot be applied.']);
+    if ($chk && ($chkRow = mysqli_fetch_assoc($chk))) {
+        $prevType = !empty($chkRow['leave_type']) ? $chkRow['leave_type'] : $chkRow['leave_name'];
+        $prevStatus = $chkRow['status'] ?? 'Pending';
+        $prevRange = ($chkRow['from_date'] === $chkRow['to_date']) ? $chkRow['from_date'] : "{$chkRow['from_date']} to {$chkRow['to_date']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous leave application ($prevType for $prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    // Overlap check with existing tours
+    $tourChk = mysqli_query($con, "
+        SELECT id, status, fromDate, toDate FROM tour 
+        WHERE userId = '$userId' AND status NOT IN ('Rejected', 'Cancelled')
+          AND fromDate <= '$safeTo' AND toDate >= '$safeFrom'
+        LIMIT 1
+    ");
+    if ($tourChk && ($tRow = mysqli_fetch_assoc($tourChk))) {
+        $prevStatus = $tRow['status'] ?? 'Approved';
+        $prevRange = ($tRow['fromDate'] === $tRow['toDate']) ? $tRow['fromDate'] : "{$tRow['fromDate']} to {$tRow['toDate']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous Tour application ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    // Overlap check with existing WFH
+    $wfhChk = mysqli_query($con, "
+        SELECT wfh_id, status, fromDate, toDate FROM wfhRequests 
+        WHERE userid = '$userId' AND status NOT IN ('Rejected', 'Cancelled')
+          AND fromDate <= '$safeTo' AND toDate >= '$safeFrom'
+        LIMIT 1
+    ");
+    if ($wfhChk && ($wRow = mysqli_fetch_assoc($wfhChk))) {
+        $prevStatus = $wRow['status'] ?? 'Pending';
+        $prevRange = ($wRow['fromDate'] === $wRow['toDate']) ? $wRow['fromDate'] : "{$wRow['fromDate']} to {$wRow['toDate']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous Work From Home request ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
         exit;
     }
 
@@ -427,28 +525,57 @@ if ($action === 'apply_wfh') {
 
     // Overlap check with existing WFH requests
     $dupQ = mysqli_query($con, "
-        SELECT wfh_id FROM wfhRequests 
+        SELECT wfh_id, status, fromDate, toDate FROM wfhRequests 
         WHERE userid = '$safeUserId' 
           AND status NOT IN ('Rejected', 'Cancelled')
           AND fromDate <= '$safeToDate' AND toDate >= '$safeFromDate'
         LIMIT 1
     ");
-    if ($dupQ && mysqli_num_rows($dupQ) > 0) {
-        echo json_encode(['success' => false, 'error' => 'You already have an active or pending Work From Home request during this date range.']);
+    if ($dupQ && ($dupRow = mysqli_fetch_assoc($dupQ))) {
+        $prevStatus = $dupRow['status'] ?? 'Pending';
+        $prevRange = ($dupRow['fromDate'] === $dupRow['toDate']) ? $dupRow['fromDate'] : "{$dupRow['fromDate']} to {$dupRow['toDate']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous Work From Home request ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
         exit;
     }
 
     // Overlap check with active leaves
     $leaveQ = mysqli_query($con, "
-        SELECT leave_id FROM leaves 
+        SELECT leave_id, leave_type, leave_name, status, from_date, to_date FROM leaves 
         WHERE userId = '$safeUserId' 
           AND status NOT IN ('Rejected', 'Cancelled')
           AND leave_name NOT LIKE '%Auto Leave%'
           AND from_date <= '$safeToDate' AND to_date >= '$safeFromDate'
         LIMIT 1
     ");
-    if ($leaveQ && mysqli_num_rows($leaveQ) > 0) {
-        echo json_encode(['success' => false, 'error' => 'You have an active or pending Leave during this date range. WFH cannot overlap with leave.']);
+    if ($leaveQ && ($lRow = mysqli_fetch_assoc($leaveQ))) {
+        $prevType = !empty($lRow['leave_type']) ? $lRow['leave_type'] : $lRow['leave_name'];
+        $prevStatus = $lRow['status'] ?? 'Pending';
+        $prevRange = ($lRow['from_date'] === $lRow['to_date']) ? $lRow['from_date'] : "{$lRow['from_date']} to {$lRow['to_date']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous leave application ($prevType for $prevRange) has status: $prevStatus. Please choose another date."
+        ]);
+        exit;
+    }
+
+    // Overlap check with active tours
+    $tourQ = mysqli_query($con, "
+        SELECT id, status, fromDate, toDate FROM tour 
+        WHERE userId = '$safeUserId' 
+          AND status NOT IN ('Rejected', 'Cancelled')
+          AND fromDate <= '$safeToDate' AND toDate >= '$safeFromDate'
+        LIMIT 1
+    ");
+    if ($tourQ && ($tRow = mysqli_fetch_assoc($tourQ))) {
+        $prevStatus = $tRow['status'] ?? 'Approved';
+        $prevRange = ($tRow['fromDate'] === $tRow['toDate']) ? $tRow['fromDate'] : "{$tRow['fromDate']} to {$tRow['toDate']}";
+        echo json_encode([
+            'success' => false, 
+            'error' => "You already applied on this date. Your previous Tour application ($prevRange) has status: $prevStatus. Please choose another date."
+        ]);
         exit;
     }
 
