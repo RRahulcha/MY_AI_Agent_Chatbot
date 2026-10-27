@@ -1,8 +1,10 @@
 import re
+import os
 import logging
 from dataclasses import dataclass
 from typing import Optional, List
 
+groq_api_key = os.getenv("GROQ_API_KEY")
 logger = logging.getLogger("ams-ai.guardrails")
 
 @dataclass
